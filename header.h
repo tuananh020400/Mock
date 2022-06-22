@@ -20,21 +20,19 @@ typedef struct{
 
 typedef struct{
     char name[8];
-    char pad;
     char type[3];
-    char pad1[4];
+    char pad[1];
     uint8_t day;
     uint8_t month;
     uint8_t year;
+    char pad1[1];
     uint8_t second;
     uint8_t minute;
     uint8_t hour;
+    char pad2[1];
     uint32_t size;
 } Entry;
 
 uint32_t HAL_ReadSector(uint32_t index, uint8_t *buff);
 
 void ReadBootSector(BootSectorFAT12 *bootSector);
-
-
-

@@ -67,5 +67,3 @@ void ReadBootSector(BootSectorFAT12 *bootSector)
     printf("---------------------------------------------------------------------------------------\n");
     free(buffer);
 }
-
-

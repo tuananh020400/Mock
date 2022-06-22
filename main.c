@@ -111,6 +111,7 @@ void ReadEntryRDET(uint8_t startSector, uint8_t *buffer, Entry *entryArray)
         //     entry.hour = (buffer[count + 0x16 + 0x01] & (~0b00000111)) >> 3;
         //     Print(entry);
         // }
+        i ++;
         count = count + 32;
     }
 }
@@ -137,6 +138,3 @@ int main(void)
     
     return 0;
 }
-
-
-
