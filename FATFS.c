@@ -15,7 +15,7 @@ void ReadFile(Entry entry)
 {
     uint8_t *bufferFat = NULL;
     bufferFat = (uint8_t*)malloc(512);
-    uint32_t fat = entry.startCluster;
+    uint16_t fat = entry.startCluster;
 
     PrintData(fat);
 }

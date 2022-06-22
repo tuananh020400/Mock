@@ -31,8 +31,12 @@ typedef struct{
     uint8_t hour;
     char pad2[1];
     uint32_t size;
+    uint16_t startCluster;
 } Entry;
 
 uint32_t HAL_ReadSector(uint32_t index, uint8_t *buff);
 
 void ReadBootSector(BootSectorFAT12 *bootSector);
+
+void ReadFile(Entry entry);
+

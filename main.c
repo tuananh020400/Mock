@@ -37,6 +37,7 @@ void Print(Entry entry)
             printf("%-14s%-10s","","File Folder");
             printf("%7s%02d/%02d/%-4d", "", entry.day, entry.month, entry.year + 1980);
             printf("%7s%02d:%02d:%02d", "", entry.hour, entry.minute, entry.second * 2);
+            printf("%d",entry.startCluster);
         }
         printf("\n"); 
     }
@@ -72,8 +73,9 @@ void ReadEntryRDET(uint8_t startSector, uint8_t *buffer, Entry *entryArray)
             entryArray[i].second = buffer[count + 0x16] & (~0b11100000);
             entryArray[i].minute = ((buffer[count + 0x16] & (~0b00011111)) >> 5) | ((buffer[count + 0x16 + 0x01] & (~0b11111000)) << 3);
             entryArray[i].hour = (buffer[count + 0x16 + 0x01] & (~0b00000111)) >> 3;
-
+            entryArray[i].startCluster = (uint16_t)(buffer[count + 0x1A]) | ((uint16_t)(buffer[count + 0x1B]) << 8);
             Print(entryArray[i]);
+            i++;
         }
         // if((buffer[count + 0x0B] == 0x00))
         // {
@@ -111,9 +113,9 @@ void ReadEntryRDET(uint8_t startSector, uint8_t *buffer, Entry *entryArray)
         //     entry.hour = (buffer[count + 0x16 + 0x01] & (~0b00000111)) >> 3;
         //     Print(entry);
         // }
-        i ++;
         count = count + 32;
     }
+    
 }
 
 
@@ -133,8 +135,8 @@ int main(void)
         HAL_ReadSector(0, buffer);
         ReadBootSector(&bootSector);
         ReadEntryRDET(bootSector.sectorsOfBoot + bootSector.sectorsOfFAT*bootSector.numOfFAT, buffer, entryArray);
+        ReadFile(entryArray[1]);
     }
     fclose(file);
-    
     return 0;
 }
