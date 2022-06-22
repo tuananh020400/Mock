@@ -7,7 +7,7 @@ extern FILE *file;
 void Print(Entry entry)
 {
     static uint8_t no = 0;
-    
+
     if(entry.name[0] != 0)
     {
         no++;
@@ -42,13 +42,12 @@ void Print(Entry entry)
     }
 }
 
-void ReadEntryRDET(uint8_t startSector, uint8_t *buffer)
+void ReadEntryRDET(uint8_t startSector, uint8_t *buffer, Entry *entryArray)
 {
     uint32_t count = 0x00;
     uint8_t i = 0;
     uint8_t nameCount = 0;
     uint8_t typeCount = 0;
-    Entry entryArray[16];
     
     printf("%-4s%-15s%-7s%-18s%-17s%-10s\n", "No", "Name", "Size", "Type", "Day Modified", "Time Modified");
     printf("---------------------------------------------------------------------------------------\n");
@@ -121,6 +120,7 @@ int main(void)
 {
     BootSectorFAT12 bootSector;
     uint8_t buffer[512];
+    Entry entryArray[16];
     
     file = fopen("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock\\floppy.img", "rb");
     if(file == NULL)
@@ -131,7 +131,7 @@ int main(void)
     {
         HAL_ReadSector(0, buffer);
         ReadBootSector(&bootSector);
-        ReadEntryRDET(bootSector.sectorsOfBoot + bootSector.sectorsOfFAT*bootSector.numOfFAT, buffer);
+        ReadEntryRDET(bootSector.sectorsOfBoot + bootSector.sectorsOfFAT*bootSector.numOfFAT, buffer, entryArray);
     }
     fclose(file);
     

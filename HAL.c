@@ -65,6 +65,7 @@ void ReadBootSector(BootSectorFAT12 *bootSector)
 //    printf("Number of sectors in a file allocation table: %d\n", bootSector->sectorsOfFAT);
 //    printf("Name of FAT: %s\n", bootSector->typeOfFAT);
     printf("---------------------------------------------------------------------------------------\n");
+    free(buffer);
 }
 
 
