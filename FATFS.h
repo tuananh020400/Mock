@@ -5,9 +5,8 @@
 *******************************************************************************/
 #include <stdio.h>
 #include <stdint.h>
-#include <math.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include "HAL.h"
 
 /*******************************************************************************
@@ -30,7 +29,7 @@ typedef struct
     char type[3];
     uint32_t size;
     FATFS_TimeEntry_Struct_t timeEntry;
-    uint16_t startCluster;
+    uint32_t startCluster;
 } FATFS_Entry_Struct_t;
 
 typedef struct EntryList
@@ -44,13 +43,26 @@ typedef FATFS_EntryList_Struct_t *node;
 * Prototypes
 *******************************************************************************/
 
+/**
+ * @brief 
+ * 
+ * @param startSector 
+ * @param head 
+ * @return node 
+ */
 node ReadDirectory(uint32_t startSector, node head);
 
 node FreeLinkedList(node head);
 
-void Print(node head);
+void DisplayDirectory(node head);
 
 uint32_t Elements(node head);
 
-node ChageDirectory(node head, uint8_t select);
+node ChageDirectory(node head, uint32_t cluster);
+
+uint16_t ReadFATValue(uint16_t startCluster);
+
+void ReadFile(node head, uint32_t cluster);
+
+node ReadFileOrChangeDirectory(node head, uint8_t select);
 #endif

@@ -19,16 +19,24 @@ int main(void)
     node head = NULL;
     uint8_t select;
     
-    HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock\\floppy.img");
-    head = ReadDirectory(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT, head);
-    Print(head);
-    while(1)
+    if(HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock\\floppy.img") == READ_FILE_SUCCESSFULLY)
     {
-        do
+        head = ReadDirectory(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT, head);
+        DisplayDirectory(head);
+        while(1)
         {
-            printf("Enter position to add: ");
-            select = InputInt();
-        } while (CheckSelect(head, select) != 0);
-        head = ChageDirectory(head, select);
+            do
+            {
+                printf("\nEnter your select: ");
+                select = InputInt();
+            } while (CheckSelect(head, select) != 0);
+            head = ReadFileOrChangeDirectory(head, select);
+        }
     }
+
+    return 0;
 }
+
+/*******************************************************************************
+* End of file
+*******************************************************************************/
