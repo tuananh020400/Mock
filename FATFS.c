@@ -45,7 +45,6 @@ Status FATFS_CreateNode(FATFS_EntryList_Struct_t **node, FATFS_Entry_Struct_t *b
 
 void FATFS_AddEntry(FATFS_EntryList_Struct_t **head, FATFS_EntryList_Struct_t *nodeAdd)
 {
-
     FATFS_EntryList_Struct_t *count = NULL;
 
     if ((*head) == NULL)
@@ -63,28 +62,28 @@ void FATFS_AddEntry(FATFS_EntryList_Struct_t **head, FATFS_EntryList_Struct_t *n
     }
 }
 
-FATFS_EntryList_Struct_t * FreeLinkedList(FATFS_EntryList_Struct_t *head)
+void FreeLinkedList(FATFS_EntryList_Struct_t **head)
 {
     FATFS_EntryList_Struct_t *temp = NULL;
 
-    while (head != NULL)
+    while (*head != NULL)
     {
-        temp = head;
-        head = head->next;
+        temp = *head;
+        *head = (*head)->next;
         free(temp);
     }
-    return head;
 }
 
-FATFS_EntryList_Struct_t *ReadDirectory(uint32_t startSector, FATFS_EntryList_Struct_t *head)
+FATFS_EntryList_Struct_t *ReadRootDirectory(FATFS_EntryList_Struct_t *head)
 {
     uint8_t *buffer = NULL;
     uint8_t *offset = NULL;
     FATFS_EntryList_Struct_t *entry = NULL;
     uint32_t i = 0;
 
-    buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector);
-    HAL_ReadSector(startSector, buffer);
+    buffer = (uint8_t*)malloc(32 * g_bootSector.entrysOfRDET);
+
+    HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT, g_bootSector.entrysOfRDET * 32 / g_bootSector.bytesOfSector, buffer);
     offset = &buffer[i];
     while (offset[0] != 0)
     {
@@ -107,14 +106,73 @@ FATFS_EntryList_Struct_t *ReadDirectory(uint32_t startSector, FATFS_EntryList_St
         i = i + 32;
         offset = &buffer[i];
     }
-    
+
     return head;
 }
+
+FATFS_EntryList_Struct_t *ReadSubDirectory(FATFS_EntryList_Struct_t *head, uint32_t startCluster)
+{
+    uint8_t *buffer = NULL;
+    uint8_t *offset = NULL;
+    FATFS_EntryList_Struct_t *entry = NULL;
+    uint32_t i = 0;
+
+    buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector * g_bootSector.sectorsOfCluster);
+    while (startCluster != 0xFFF)
+    {
+        HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT + g_bootSector.entrysOfRDET/16 + g_bootSector.sectorsOfCluster * (startCluster - 2), g_bootSector.sectorsOfCluster, buffer);
+        i = 0;
+        offset = &buffer[i];
+        while (offset[0] != 0)
+        {
+            if(offset[0x0B] == 0x00 || offset[0x0B] == 0x10)
+            {
+                if(offset[0x00] == 0x2E)
+                {
+                    if(offset[0x01] == 0x2E)
+                    {
+                        FATFS_CreateNode(&entry, (FATFS_Entry_Struct_t*)offset);
+                        FATFS_AddEntry(&head, entry);
+                    }
+                }
+                else
+                {
+                    FATFS_CreateNode(&entry, (FATFS_Entry_Struct_t*)offset);
+                    FATFS_AddEntry(&head, entry);
+                }
+            }
+            i = i + 32;
+            offset = &buffer[i];
+        }
+        startCluster = ReadFATValue(startCluster);
+    }
+
+    return head;
+}
+
+FATFS_EntryList_Struct_t *ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t *head)
+{
+
+    system("cls");
+    FreeLinkedList(&head);
+    if(startCluster == 0)
+    {
+        head = ReadRootDirectory(head);
+    }
+    else
+    {
+        head = ReadSubDirectory(head, startCluster);
+    }
+    DisplayDirectory(head);
+    return head;
+}
+
+
 
 FATFS_EntryList_Struct_t * ChageDirectory(FATFS_EntryList_Struct_t *head, uint32_t cluster)
 {
     system("cls");
-    head = FreeLinkedList(head);
+    FreeLinkedList(&head);
     if(cluster != 0)
     {
         head = ReadDirectory(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT + g_bootSector.entrysOfRDET/16 + g_bootSector.sectorsOfCluster * (cluster - 2) , head);
@@ -123,7 +181,7 @@ FATFS_EntryList_Struct_t * ChageDirectory(FATFS_EntryList_Struct_t *head, uint32
     {
         head = ReadDirectory(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT, head);
     }
-    DisplayDirectory(head);
+    
 
     return head;
 }
@@ -162,7 +220,7 @@ FATFS_EntryList_Struct_t * ReadFileOrChangeDirectory(FATFS_EntryList_Struct_t *h
     }
     if(temp->entry.attribute == 0x10)
     {
-        head = ChageDirectory(head, temp->entry.clusterLow);
+        head = ReadDirectory(temp->entry.clusterLow, head);
     }
     else
     {
@@ -222,8 +280,10 @@ void DisplayDirectory(FATFS_EntryList_Struct_t *head)
         {
             printf("%-4d", no);
             /* Print name */
-                printf("%s - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %d \n", count->entry.fileName,count->entry.attribute, count->entry.reserved[0], count->entry.reserved[1], count->entry.timeStamp, count->entry.dateStamp\
-                , count->entry.accessDate, count->entry.clusterHight, count->entry.editTime, count->entry.editDate, count->entry.editTime, count->entry.clusterLow, count->entry.fileSize);
+//                printf("%s - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %d \n", count->entry.fileName,count->entry.attribute, count->entry.reserved[0], count->entry.reserved[1], count->entry.timeStamp, count->entry.dateStamp\
+//                , count->entry.accessDate, count->entry.clusterHight, count->entry.editTime, count->entry.editDate, count->entry.editTime, count->entry.clusterLow, count->entry.fileSize);
+
+            printf("%s\n", count->entry.fileName);
             /* Print type */
         }
         no++;

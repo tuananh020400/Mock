@@ -47,7 +47,7 @@ typedef struct EntryList
  */
 FATFS_EntryList_Struct_t * ReadDirectory(uint32_t startSector, FATFS_EntryList_Struct_t *head);
 
-FATFS_EntryList_Struct_t * FreeLinkedList(FATFS_EntryList_Struct_t *head);
+void FreeLinkedList(FATFS_EntryList_Struct_t **head);
 
 void DisplayDirectory(FATFS_EntryList_Struct_t *head);
 

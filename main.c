@@ -23,8 +23,7 @@ int main(void)
     
     if(HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock\\floppy.img") == READ_FILE_SUCCESSFULLY)
     {
-        head = ReadDirectory(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT, head);
-        DisplayDirectory(head);
+        head = ReadDirectory(0, head);
         while(1)
         {
             do
