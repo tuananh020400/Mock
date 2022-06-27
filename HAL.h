@@ -22,18 +22,27 @@ typedef struct{
     uint16_t sectorsOfVolume;
     uint32_t sectorsOfFAT;
     int8_t typeOfFAT[8];
-} FATFS_BootSector_Struct_t;
+} FATFS_BootInfor_Struct_t;
 
 typedef enum
 {
     READ_FAILED = 0,
     NOT_ENOUGH_MEMORY = 1,
-    READ_FILE_SUCCESSFULLY = 2
-} StatusRead;
+    READ_FILE_SUCCESSFULLY = 2,
+    ADD_SUCCESSFULLY = 3
+} Status;
 
 /*******************************************************************************
 * API
 *******************************************************************************/
+
+/**
+ * @brief Initialize the reading process
+ * 
+ * @param[in] filePath The path to the file
+ * @return Status Notification of successful or failed file reading
+ */
+Status HAL_Init(const char *filePath);
 
 /**
  * @brief Read data of a sector
@@ -42,7 +51,7 @@ typedef enum
  * @param[inout] buff Data storage array
  * @return uint32_t Number of bytes read
  */
-uint32_t HAL_ReadSector(uint32_t index, uint8_t *buff);
+int32_t HAL_ReadSector(uint32_t index, uint8_t *buff);
 
 /**
  * @brief Read data of multiple sector
@@ -52,15 +61,8 @@ uint32_t HAL_ReadSector(uint32_t index, uint8_t *buff);
  * @param[inout] buff Data storage array
  * @return uint32_t Number of bytes read
  */
-uint32_t HAL_ReadMultiSector(uint32_t index, uint32_t num, uint8_t *buff);
+int32_t HAL_ReadMultiSector(uint32_t index, uint32_t num, uint8_t *buff);
 
-/**
- * @brief Initialize the reading process
- * 
- * @param[in] filePath The path to the file
- * @return StatusRead Notification of successful or failed file reading
- */
-StatusRead HAL_Init(const char * filePath);
 
 #endif /* _HAL_H */
 

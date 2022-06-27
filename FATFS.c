@@ -11,91 +11,61 @@
 /*******************************************************************************
 * Code
 *******************************************************************************/
-extern FILE *g_file;
-extern FATFS_BootSector_Struct_t g_bootSector;
+extern FATFS_BootInfor_Struct_t g_bootSector;
 
-node CreateNode(uint8_t *buffer)
+Status FATFS_CreateNode(FATFS_EntryList_Struct_t **node, FATFS_Entry_Struct_t *buffer)
 {
-    node temp;
-    uint8_t nameCount = 0;
-    uint8_t typeCount = 0;
+    Status status = ADD_SUCCESSFULLY;
 
-    temp = (node)malloc(sizeof(FATFS_EntryList_Struct_t));
-    temp->next = NULL;
-    for (nameCount = 0; nameCount < 8; nameCount++)
+    (*node) = (FATFS_EntryList_Struct_t *)malloc(sizeof(FATFS_EntryList_Struct_t));
+    if((*node) == NULL)
     {
-        temp->entry.name[nameCount] = buffer[nameCount];
-    }
-    for (typeCount= 0; typeCount < 3; typeCount++)
-    {
-        temp->entry.type[typeCount] = buffer[0x08 + typeCount];
-    }
-    temp->entry.size = ((uint32_t)buffer[0x1C]) | ((uint32_t)buffer[1 + 0x1C] << 8) | \
-    ((uint32_t)buffer[2 + 0x1C] << 16) | ((uint32_t)buffer[3 + 0x1C] << 24); 
-    temp->entry.timeEntry.day = buffer[0x18] & (~0xE0);
-    temp->entry.timeEntry.month = ((buffer[0x18] & (~0x1F)) >> 5) | ((buffer[0x18 + 0x01] & (~0x7F)) << 3);
-    temp->entry.timeEntry.year = ((buffer[0x18 + 0x01] & (~0x01)) >> 1);
-    temp->entry.timeEntry.second = buffer[0x16] & (~0xE0);
-    temp->entry.timeEntry.minute = ((buffer[0x16] & (~0x1F)) >> 5) | ((buffer[0x16 + 0x01] & (~0xF8)) << 3);
-    temp->entry.timeEntry.hour = (buffer[0x16 + 0x01] & (~0x07)) >> 3;
-    temp->entry.startCluster = (uint32_t)(buffer[0x1A]) | ((uint32_t)(buffer[0x1B]) << 8) | \
-    ((uint32_t)(buffer[0x14]) << 16) | ((uint32_t)(buffer[0x15]) << 24);
-    return temp;
-}
-
-uint32_t Elements(node head)
-{
-    uint32_t elements = 0;
-    node temp = head;
-
-    if(head != NULL)
-    {
-        while (temp != NULL) /* Browse all element */
-        {
-            temp = temp->next;
-            elements++;
-        }
-    }
-    return elements;
-}
-
-uint8_t CheckSelect(node head, uint32_t position)
-{
-    uint8_t check = 0;
-    uint32_t elements = Elements(head);
-
-    if(position < 1 || position > elements) /* Limit input position 1 - numbers element of list */
-    {
-        check++;
-        printf("Error: Input position is not in range 1 - %d!\n", elements);
-    }
-    return check;
-}
-
-node AddEntry(node head, uint8_t *buffer)
-{
-    node temp = CreateNode(buffer);
-    node count = NULL;
-
-    if (head == NULL)
-    {
-        head = temp;
+        status = NOT_ENOUGH_MEMORY;
     }
     else
     {
-        count = head;
+        /* Next = NULL */
+        (*node)->next = NULL;
+        /* Save data */
+        memcpy((*node)->entry.fileName, buffer->fileName, 11);
+        (*node)->entry.attribute = buffer->attribute;
+        memcpy((*node)->entry.reserved, buffer->reserved, 11);
+        (*node)->entry.timeStamp = buffer->timeStamp;
+        (*node)->entry.dateStamp = buffer->dateStamp;
+        (*node)->entry.accessDate = buffer->accessDate;
+        (*node)->entry.clusterHight = buffer->clusterHight;
+        (*node)->entry.editTime = buffer->editTime;
+        (*node)->entry.editDate = buffer->editDate;
+        (*node)->entry.clusterLow = buffer->clusterLow;
+        (*node)->entry.fileSize = buffer->fileSize;
+    }
+
+    return status;
+}
+
+void FATFS_AddEntry(FATFS_EntryList_Struct_t **head, FATFS_EntryList_Struct_t *nodeAdd)
+{
+
+    FATFS_EntryList_Struct_t *count = NULL;
+
+    if ((*head) == NULL)
+    {
+        *head = nodeAdd;
+    }
+    else
+    {
+        count = *head;
         while (count->next != NULL)
         {
             count = count->next;
         }
-        count->next = temp;
+        count->next = nodeAdd;
     }
-    return head;
 }
 
-node FreeLinkedList(node head)
+FATFS_EntryList_Struct_t * FreeLinkedList(FATFS_EntryList_Struct_t *head)
 {
-    node temp = NULL;
+    FATFS_EntryList_Struct_t *temp = NULL;
 
     while (head != NULL)
     {
@@ -106,10 +76,11 @@ node FreeLinkedList(node head)
     return head;
 }
 
-node ReadDirectory(uint32_t startSector, node head)
+FATFS_EntryList_Struct_t *ReadDirectory(uint32_t startSector, FATFS_EntryList_Struct_t *head)
 {
     uint8_t *buffer = NULL;
     uint8_t *offset = NULL;
+    FATFS_EntryList_Struct_t *entry = NULL;
     uint32_t i = 0;
 
     buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector);
@@ -123,12 +94,14 @@ node ReadDirectory(uint32_t startSector, node head)
             {
                 if(offset[0x01] == 0x2E)
                 {
-                    head = AddEntry(head, offset);
+                    FATFS_CreateNode(&entry, (FATFS_Entry_Struct_t*)offset);
+                    FATFS_AddEntry(&head, entry);
                 }
             }
             else
             {
-                head = AddEntry(head, offset);
+                FATFS_CreateNode(&entry, (FATFS_Entry_Struct_t*)offset);
+                FATFS_AddEntry(&head, entry);
             }
         }
         i = i + 32;
@@ -138,7 +111,7 @@ node ReadDirectory(uint32_t startSector, node head)
     return head;
 }
 
-node ChageDirectory(node head, uint32_t cluster)
+FATFS_EntryList_Struct_t * ChageDirectory(FATFS_EntryList_Struct_t *head, uint32_t cluster)
 {
     system("cls");
     head = FreeLinkedList(head);
@@ -155,7 +128,7 @@ node ChageDirectory(node head, uint32_t cluster)
     return head;
 }
 
-void ReadFile(node head, uint32_t cluster)
+void ReadFile(FATFS_EntryList_Struct_t *head, uint32_t cluster)
 {
     uint8_t *buffer = NULL;
     uint32_t indexLine = 0;
@@ -177,23 +150,23 @@ void ReadFile(node head, uint32_t cluster)
     DisplayDirectory(head);
 }
 
-node ReadFileOrChangeDirectory(node head, uint8_t select)
+FATFS_EntryList_Struct_t * ReadFileOrChangeDirectory(FATFS_EntryList_Struct_t *head, uint8_t select)
 {
     uint8_t count = 1;
-    node temp = head;
+    FATFS_EntryList_Struct_t *temp = head;
 
     while (count != select)
     {
         temp = temp->next;
         count++;
     }
-    if(temp->entry.type[0] == ' ' && temp->entry.type[1] == ' ' && temp->entry.type[2] == ' ')
+    if(temp->entry.attribute == 0x10)
     {
-        head = ChageDirectory(head, temp->entry.startCluster);
+        head = ChageDirectory(head, temp->entry.clusterLow);
     }
     else
     {
-        ReadFile(head, temp->entry.startCluster);
+        ReadFile(head, temp->entry.clusterLow);
     }
     
     return head;
@@ -231,17 +204,17 @@ uint16_t ReadFATValue(uint16_t startCluster)
     return FATValue;
 }
 
-void DisplayDirectory(node head)
+void DisplayDirectory(FATFS_EntryList_Struct_t *head)
 {
     uint8_t no = 1;
-    node count = NULL;
+    FATFS_EntryList_Struct_t *count = NULL;
     
     printf("---------------------------------------------------------------------------------------\n");
     printf("%-4s%-15s%-9s%-25s%-17s%-10s\n", "No", "Name", "Size", "Type", "Day Modified", "Time Modified");
     printf("---------------------------------------------------------------------------------------\n");
     for(count = head; count != NULL; count = count->next)
     {
-        if(count->entry.name[0] == 0x2E)
+        if(count->entry.fileName[0] == 0x2E)
         {
             printf("%-4d< BACK\n\n", no);
         }
@@ -249,51 +222,39 @@ void DisplayDirectory(node head)
         {
             printf("%-4d", no);
             /* Print name */
-            for(int i = 0; i < 8; i++)
-            {
-                printf("%c", count->entry.name[i]);
-            }
+                printf("%s - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %d \n", count->entry.fileName,count->entry.attribute, count->entry.reserved[0], count->entry.reserved[1], count->entry.timeStamp, count->entry.dateStamp\
+                , count->entry.accessDate, count->entry.clusterHight, count->entry.editTime, count->entry.editDate, count->entry.editTime, count->entry.clusterLow, count->entry.fileSize);
             /* Print type */
-            if(strcmp(count->entry.type, "TXT") == 0)
-            {
-                printf(".");
-                for(int i = 0; i < 3; i++)
-                {
-                    printf("%c", count->entry.type[i]);
-                }
-                printf("%-3s%-9d", "", count->entry.size);
-                printf("%-20s", "Text Document");
-            }
-            else if(strcmp(count->entry.type, "DOC") == 0)
-            {
-                printf(".");
-                for(int i = 0; i < 3; i++)
-                {
-                    printf("%c", count->entry.type[i]);
-                }
-                printf("%-3s%-9d", "", count->entry.size);
-                printf("%-20s", "Word Document");
-            }
-            else if(strcmp(count->entry.type, "PDF") == 0)
-            {
-                printf(".");
-                for(int i = 0; i < 3; i++)
-                {
-                    printf("%c", count->entry.type[i]);
-                }
-                printf("%-3s%-9d", "", count->entry.size);
-                printf("%-20s", "Portable Document");
-            }
-            else
-            {
-                printf("%-16s%-20s","","File Folder");
-            }
-            /* Print time */
-            printf("%5s%02d/%02d/%-4d", "", count->entry.timeEntry.day, count->entry.timeEntry.month, count->entry.timeEntry.year + 1980);
-            printf("%7s%02d:%02d:%02d", "", count->entry.timeEntry.hour, count->entry.timeEntry.minute, count->entry.timeEntry.second * 2);
-            printf("\n"); 
         }
         no++;
     } 
 }
 
+uint32_t Elements(FATFS_EntryList_Struct_t *head)
+{
+    uint32_t elements = 0;
+    FATFS_EntryList_Struct_t *temp = head;
+
+    if(head != NULL)
+    {
+        while (temp != NULL) /* Browse all element */
+        {
+            temp = temp->next;
+            elements++;
+        }
+    }
+    return elements;
+}
+
+uint8_t CheckSelect(FATFS_EntryList_Struct_t *head, uint32_t position)
+{
+    uint8_t check = 0;
+    uint32_t elements = Elements(head);
+
+    if(position < 1 || position > elements) /* Limit input position 1 - numbers element of list */
+    {
+        check++;
+        printf("Error: Input position is not in range 1 - %d!\n", elements);
+    }
+    return check;
+}

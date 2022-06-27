@@ -15,21 +15,17 @@
 
 typedef struct
 {
-    uint8_t day;
-    uint8_t month;
-    uint8_t year;
-    uint8_t second;
-    uint8_t minute;
-    uint8_t hour;
-} FATFS_TimeEntry_Struct_t;
-
-typedef struct
-{
-    int8_t name[8];
-    char type[3];
-    uint32_t size;
-    FATFS_TimeEntry_Struct_t timeEntry;
-    uint32_t startCluster;
+    int8_t fileName[11];
+    uint8_t attribute;
+    uint8_t reserved[2];
+    uint16_t timeStamp;
+    uint16_t dateStamp;
+    uint16_t accessDate;
+    uint16_t clusterHight;
+    uint16_t editDate;
+    uint16_t editTime;
+    uint16_t clusterLow;
+    uint32_t fileSize;
 } FATFS_Entry_Struct_t;
 
 typedef struct EntryList
@@ -37,7 +33,6 @@ typedef struct EntryList
     FATFS_Entry_Struct_t entry;
     struct EntryList *next;
 } FATFS_EntryList_Struct_t;
-typedef FATFS_EntryList_Struct_t *node;
 
 /*******************************************************************************
 * Prototypes
@@ -50,19 +45,22 @@ typedef FATFS_EntryList_Struct_t *node;
  * @param head 
  * @return node 
  */
-node ReadDirectory(uint32_t startSector, node head);
+FATFS_EntryList_Struct_t * ReadDirectory(uint32_t startSector, FATFS_EntryList_Struct_t *head);
 
-node FreeLinkedList(node head);
+FATFS_EntryList_Struct_t * FreeLinkedList(FATFS_EntryList_Struct_t *head);
 
-void DisplayDirectory(node head);
+void DisplayDirectory(FATFS_EntryList_Struct_t *head);
 
-uint32_t Elements(node head);
+uint32_t Elements(FATFS_EntryList_Struct_t *head);
 
-node ChageDirectory(node head, uint32_t cluster);
+FATFS_EntryList_Struct_t * ChageDirectory(FATFS_EntryList_Struct_t *head, uint32_t cluster);
 
 uint16_t ReadFATValue(uint16_t startCluster);
 
-void ReadFile(node head, uint32_t cluster);
+void ReadFile(FATFS_EntryList_Struct_t *head, uint32_t cluster);
 
-node ReadFileOrChangeDirectory(node head, uint8_t select);
+FATFS_EntryList_Struct_t * ReadFileOrChangeDirectory(FATFS_EntryList_Struct_t *head, uint8_t select);
+
+uint8_t CheckSelect(FATFS_EntryList_Struct_t *head, uint32_t position);
+
 #endif

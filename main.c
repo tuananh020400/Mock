@@ -2,13 +2,15 @@
 * Include
 *******************************************************************************/
 
-#include "header.h"
+#include "FATFS.h"
+#include "HAL.h"
+#include "Check.h"
 
 /*******************************************************************************
 * Variables
 *******************************************************************************/
 
-extern FATFS_BootSector_Struct_t g_bootSector;
+extern FATFS_BootInfor_Struct_t g_bootSector;
 
 /*******************************************************************************
 * Code
@@ -16,7 +18,7 @@ extern FATFS_BootSector_Struct_t g_bootSector;
 
 int main(void)
 {
-    node head = NULL;
+    FATFS_EntryList_Struct_t *head = NULL;
     uint8_t select;
     
     if(HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock\\floppy.img") == READ_FILE_SUCCESSFULLY)
