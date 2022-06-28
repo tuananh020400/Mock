@@ -20,13 +20,12 @@ static Status HAL_ReadBoot(FATFS_BootInfor_Struct_t *bootSector);
 * Variables
 *******************************************************************************/
 
-FILE *g_file;
+FILE *s_file;
 FATFS_BootInfor_Struct_t g_bootSector;
 
 /*******************************************************************************
 * Code
 *******************************************************************************/
-
 static Status HAL_ReadBoot(FATFS_BootInfor_Struct_t *bootSector)
 {
     uint8_t index = 0;
@@ -41,7 +40,7 @@ static Status HAL_ReadBoot(FATFS_BootInfor_Struct_t *bootSector)
     }
     else
     {
-        if(fread(buffer, 1 , 512, g_file) == 0)
+        if(fread(buffer, 1 , 512, s_file) == 0)
         {
             readStatus = READ_FAILED;
         }
@@ -73,9 +72,9 @@ Status HAL_Init(const char * filePath)
     Status readStatus = SUCCESSFULLY;
 
     /* Open stream to file */
-    g_file = fopen(filePath, "rb");
+    s_file = fopen(filePath, "rb");
     /* Cannot open stream */
-    if(g_file == NULL)
+    if(s_file == NULL)
     {
         readStatus = READ_FAILED;
     }
@@ -89,9 +88,9 @@ int32_t HAL_ReadSector(uint32_t index, uint8_t *buff)
 {
     uint32_t byte = 0;
     /* Point to sector location */
-    fseek(g_file, (uint32_t)(g_bootSector.bytesOfSector * index), SEEK_SET);
+    fseek(s_file, (uint32_t)(g_bootSector.bytesOfSector * index), SEEK_SET);
     /* Read sector */
-    byte = fread(buff, 1, g_bootSector.bytesOfSector, g_file);
+    byte = fread(buff, 1, g_bootSector.bytesOfSector, s_file);
 
     return byte;
 }
@@ -101,9 +100,9 @@ int32_t HAL_ReadMultiSector(uint32_t index, uint32_t num, uint8_t *buff)
     uint32_t byte = 0;
     
     /* Point to sector location */
-    fseek(g_file, (uint32_t)(g_bootSector.bytesOfSector * index), SEEK_SET);
+    fseek(s_file, (uint32_t)(g_bootSector.bytesOfSector * index), SEEK_SET);
     /* Read sector */
-    byte = fread(buff, 1, 512 * num, g_file);
+    byte = fread(buff, 1, 512 * num, s_file);
 
     return byte;
 }

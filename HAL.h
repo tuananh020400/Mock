@@ -8,21 +8,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "FATFS.h"
 
 /*******************************************************************************
 * Definition
 *******************************************************************************/
-
-typedef struct{
-    uint16_t bytesOfSector;
-    uint8_t sectorsOfCluster;
-    uint16_t sectorsOfBoot;
-    uint8_t numOfFAT;
-    uint16_t entrysOfRDET;
-    uint16_t sectorsOfVolume;
-    uint32_t sectorsOfFAT;
-    int8_t typeOfFAT[8];
-} FATFS_BootInfor_Struct_t;
 
 typedef enum
 {

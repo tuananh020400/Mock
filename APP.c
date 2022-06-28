@@ -1,4 +1,5 @@
 #include "APP.h"
+#include "math.h"
 
 static uint32_t StringToInt(char *ch)
 {
@@ -49,6 +50,64 @@ uint32_t InputInt()
         }
     }
     return StringToInt(ch);
+}
+
+FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *head, uint8_t select)
+{
+    uint8_t count = 1;
+    FATFS_EntryList_Struct_t *temp = head;
+
+    while (count != select)
+    {
+        temp = temp->next;
+        count++;
+    }
+    if(temp->entry.attribute == 0x10)
+    {
+        head = ReadDirectory(temp->entry.clusterLow, head);
+    }
+    else
+    {
+        PrintFile(temp->entry.clusterLow, temp->entry.fileSize);
+        printf("\n");
+        system("pause");
+        system("cls");
+        DisplayDirectory(head);
+    }
+    
+    return head;
+}
+
+void PrintFile(uint32_t cluster, uint32_t size)
+{
+    uint8_t *buffer = NULL;
+
+    buffer = (uint8_t*)malloc(size);
+    ReadFile(cluster, size, buffer);
+    for(int i = 0; i < size; i++)
+    {
+        printf("%c", buffer[i]);
+    }
+}
+void RunApp()
+{
+    FATFS_EntryList_Struct_t *head = NULL;
+    uint8_t select;
+    FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *head, uint8_t select);
+    
+    if(HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock2\\floppy.img") == SUCCESSFULLY)
+    {
+        head = ReadDirectory(0, head);
+        while(1)
+        {
+            do
+            {
+                printf("\nEnter your select: ");
+                select = InputInt();
+            } while (CheckSelect(head, select) != 0);
+            head = FATFS_ReadFileAndDirectory(head, select);
+        }
+    }
 }
 
 

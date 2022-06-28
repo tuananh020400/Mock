@@ -13,6 +13,17 @@
 * Definition
 *******************************************************************************/
 
+typedef struct{
+    uint16_t bytesOfSector;
+    uint8_t sectorsOfCluster;
+    uint16_t sectorsOfBoot;
+    uint8_t numOfFAT;
+    uint16_t entrysOfRDET;
+    uint16_t sectorsOfVolume;
+    uint32_t sectorsOfFAT;
+    int8_t typeOfFAT[8];
+} FATFS_BootInfor_Struct_t;
+
 typedef struct
 {
     int8_t fileName[11];
@@ -41,7 +52,7 @@ void DisplayDirectory(FATFS_EntryList_Struct_t *head);
 
 uint16_t ReadFATValue(uint16_t startCluster);
 
-FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *head, uint8_t select);
+FATFS_EntryList_Struct_t *ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t *head);
 
 #endif
 
