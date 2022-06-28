@@ -14,13 +14,6 @@
 * Definition
 *******************************************************************************/
 
-typedef enum
-{
-    READ_FAILED = 0,
-    NOT_ENOUGH_MEMORY = 1,
-    SUCCESSFULLY = 2,
-} Status;
-
 /*******************************************************************************
 * API
 *******************************************************************************/
@@ -31,7 +24,7 @@ typedef enum
  * @param[in] filePath The path to the file
  * @return Status Notification of successful or failed file reading
  */
-Status HAL_Init(const char *filePath);
+void HAL_Init(const char *filePath);
 
 /**
  * @brief Read data of a sector

@@ -45,6 +45,12 @@ typedef struct EntryList
     struct EntryList *next;
 } FATFS_EntryList_Struct_t;
 
+typedef enum
+{
+    READ_FAILED = 0,
+    NOT_ENOUGH_MEMORY = 1,
+    SUCCESSFULLY = 2,
+} Status;
 /*******************************************************************************
 * API
 *******************************************************************************/
@@ -52,7 +58,7 @@ void DisplayDirectory(FATFS_EntryList_Struct_t *head);
 
 uint16_t ReadFATValue(uint16_t startCluster);
 
-FATFS_EntryList_Struct_t *ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t *head);
+Status ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t **head);
 
 #endif
 

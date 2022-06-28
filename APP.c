@@ -56,7 +56,7 @@ FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *
 {
     uint8_t count = 1;
     FATFS_EntryList_Struct_t *temp = head;
-
+    
     while (count != select)
     {
         temp = temp->next;
@@ -64,10 +64,13 @@ FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *
     }
     if(temp->entry.attribute == 0x10)
     {
-        head = ReadDirectory(temp->entry.clusterLow, head);
+        system("cls");
+        ReadDirectory(temp->entry.clusterLow, &head);
+        DisplayDirectory(head);
     }
     else
     {
+        system("cls");
         PrintFile(temp->entry.clusterLow, temp->entry.fileSize);
         printf("\n");
         system("pause");
@@ -95,9 +98,9 @@ void RunApp()
     uint8_t select;
     FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *head, uint8_t select);
     
-    if(HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock2\\floppy.img") == SUCCESSFULLY)
-    {
-        head = ReadDirectory(0, head);
+    HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock2\\floppy.img");
+        ReadDirectory(0, &head);
+        DisplayDirectory(head);
         while(1)
         {
             do
@@ -107,7 +110,6 @@ void RunApp()
             } while (CheckSelect(head, select) != 0);
             head = FATFS_ReadFileAndDirectory(head, select);
         }
-    }
 }
 
 

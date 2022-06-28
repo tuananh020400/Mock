@@ -45,108 +45,146 @@ Status FATFS_AddEntry(FATFS_EntryList_Struct_t **head, FATFS_Entry_Struct_t *buf
         (nodeAdd)->entry.clusterLow = buffer->clusterLow;
         (nodeAdd)->entry.fileSize = buffer->fileSize;
         nodeAdd->next = NULL;
-    }
-
-    /* Add nodeAdd to the end of linked list */
-    if ((*head) == NULL)
-    {
-        *head = nodeAdd;
-    }
-    else
-    {
-        count = *head;
-        while (count->next != NULL)
+        /* Add nodeAdd to the end of linked list */
+        if ((*head) == NULL)
         {
-            count = count->next;
+            *head = nodeAdd;
         }
-        count->next = nodeAdd;
+        else
+        {
+            count = *head;
+            while (count->next != NULL)
+            {
+                count = count->next;
+            }
+            count->next = nodeAdd;
+        }
     }
 
     return status;
 }
 
-Status ReadRootDirectory(FATFS_EntryList_Struct_t **head)
+static Status FATFS_ReadRootDirectory(FATFS_EntryList_Struct_t **head)
 {
     uint8_t *buffer = NULL;
     uint8_t *offset = NULL;
-    uint32_t i = 0;
+    uint32_t index = 0;
     Status status = SUCCESSFULLY;
 
     buffer = (uint8_t*)malloc(32 * g_bootSector.entrysOfRDET);
-    HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT, g_bootSector.entrysOfRDET * 32 / g_bootSector.bytesOfSector, buffer);
-    offset = &buffer[i];
-    while (offset[0] != 0)
+    if(buffer == NULL)
     {
-        if(offset[0x0B] == 0x00 || offset[0x0B] == 0x10)
+        status = NOT_ENOUGH_MEMORY;
+    }
+    else
+    {
+        if(HAL_ReadMultiSector((g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT), \
+        ((g_bootSector.entrysOfRDET * 32) / g_bootSector.bytesOfSector), buffer) != (g_bootSector.entrysOfRDET * \
+        g_bootSector.bytesOfSector * 32) / g_bootSector.bytesOfSector)
         {
-            status = FATFS_AddEntry(head, (FATFS_Entry_Struct_t *)offset);
+            status = READ_FAILED;
         }
-        i = i + 32;
-        offset = &buffer[i];
+        else
+        {
+            /* Add entry */
+            offset = &buffer[index];
+            while (offset[0] != 0 && status == SUCCESSFULLY)
+            {
+                if(offset[0x0B] == 0x00 || offset[0x0B] == 0x10) /* Main entry */
+                {
+                    status = FATFS_AddEntry(head, (FATFS_Entry_Struct_t *)offset);
+                }
+                /* Shift offset to next entry */
+                index = index + 32;
+                offset = &buffer[index];
+            }
+        }
+        free(buffer);
     }
 
     return status;
 }
 
-FATFS_EntryList_Struct_t *ReadSubDirectory(FATFS_EntryList_Struct_t *head, uint32_t startCluster)
+static Status FATFS_ReadSubDirectory(FATFS_EntryList_Struct_t **head, uint32_t startCluster)
 {
     uint8_t *buffer = NULL;
     uint8_t *offset = NULL;
-    uint32_t i = 0;
+    uint32_t index = 0;
+    Status status = SUCCESSFULLY;
 
     buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector * g_bootSector.sectorsOfCluster);
-    while (startCluster != 0xFFF)
+    if(buffer == NULL)
     {
-        HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT + g_bootSector.entrysOfRDET/16 + g_bootSector.sectorsOfCluster * (startCluster - 2), g_bootSector.sectorsOfCluster, buffer);
-        i = 0;
-        offset = &buffer[i];
-        while (offset[0] != 0)
-        {
-            if(offset[0x0B] == 0x00 || offset[0x0B] == 0x10)
-            {
-                if(offset[0x00] == 0x2E)
-                {
-                    if(offset[0x01] == 0x2E)
-                    {
-                        FATFS_AddEntry(&head, (FATFS_Entry_Struct_t *)offset);
-                    }
-                }
-                else
-                {
-                    FATFS_AddEntry(&head, (FATFS_Entry_Struct_t *)offset);
-                }
-            }
-            i = i + 32;
-            offset = &buffer[i];
-        }
-        startCluster = ReadFATValue(startCluster);
-    }
-
-    return head;
-}
-
-FATFS_EntryList_Struct_t *ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t *head)
-{
-
-    system("cls");
-    FATFS_EntryList_Struct_t *temp = NULL;
-
-    while (head != NULL)
-    {
-        temp = head;
-        head = (head)->next;
-        free(temp);
-    }
-    if(startCluster == 0)
-    {
-        ReadRootDirectory(&head);
+        status = NOT_ENOUGH_MEMORY;
     }
     else
     {
-        head = ReadSubDirectory(head, startCluster);
+        while (startCluster != 0xFFF && status == SUCCESSFULLY)
+        {
+            /* Read Cluster */
+            if(HAL_ReadMultiSector((g_bootSector.sectorsOfBoot) + (g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT) + \
+            ((g_bootSector.entrysOfRDET * 32) / g_bootSector.bytesOfSector) + (g_bootSector.sectorsOfCluster * (startCluster - 2)),\
+            g_bootSector.sectorsOfCluster, buffer) != (g_bootSector.sectorsOfCluster * g_bootSector.bytesOfSector))
+            {
+                status = READ_FAILED;
+            }
+            else
+            {
+                index = 0;
+                offset = &buffer[index];
+                while (offset[0] != 0 && status == SUCCESSFULLY)
+                {
+                    /* Add Entry */
+                    if(offset[0x0B] == 0x00 || offset[0x0B] == 0x10)
+                    {
+                        /* Add .. */
+                        if(offset[0x00] == 0x2E)
+                        {
+                            if(offset[0x01] == 0x2E)
+                            {
+                                status = FATFS_AddEntry(head, (FATFS_Entry_Struct_t *)offset);
+                            }
+                        }
+                        /* Add file and directory */
+                        else
+                        {
+                            status = FATFS_AddEntry(head, (FATFS_Entry_Struct_t *)offset);
+                        }
+                    }
+                    index = index + 32;
+                    offset = &buffer[index];
+                }
+                startCluster = ReadFATValue(startCluster);
+            }
+        }
     }
-    DisplayDirectory(head);
-    return head;
+    
+    return status;
+}
+
+Status ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t **head)
+{
+    Status status = SUCCESSFULLY;
+    FATFS_EntryList_Struct_t *temp = NULL;
+
+    /* Free linked list */
+    while ((*head) != NULL)
+    {
+        temp = *head;
+        *head = (*head)->next;
+        free(temp);
+    }
+    /* ReadDirectory */
+    if(startCluster == 0)
+    {
+        status = FATFS_ReadRootDirectory(head);
+    }
+    else
+    {
+        status = FATFS_ReadSubDirectory(head, startCluster);
+    }
+
+    return status;
 }
 
 void ReadFile(uint32_t startCluster, uint32_t size, uint8_t *bufferPrint)

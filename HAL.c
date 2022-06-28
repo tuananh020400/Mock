@@ -102,7 +102,7 @@ int32_t HAL_ReadMultiSector(uint32_t index, uint32_t num, uint8_t *buff)
     /* Point to sector location */
     fseek(s_file, (uint32_t)(g_bootSector.bytesOfSector * index), SEEK_SET);
     /* Read sector */
-    byte = fread(buff, 1, 512 * num, s_file);
+    byte = fread(buff, 1, g_bootSector.bytesOfSector * num, s_file);
 
     return byte;
 }
