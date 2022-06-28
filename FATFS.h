@@ -56,8 +56,6 @@ typedef enum
 *******************************************************************************/
 void DisplayDirectory(FATFS_EntryList_Struct_t *head);
 
-uint16_t ReadFATValue(uint16_t startCluster);
-
 Status ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t **head);
 
 #endif

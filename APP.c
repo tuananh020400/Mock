@@ -1,5 +1,9 @@
 #include "APP.h"
 #include "math.h"
+#include "stdint.h"
+
+uint8_t CheckSelect(FATFS_EntryList_Struct_t *head, uint32_t position);
+void PrintFile(uint32_t cluster, uint32_t size);
 
 static uint32_t StringToInt(char *ch)
 {
@@ -112,5 +116,58 @@ void RunApp()
         }
 }
 
+void DisplayDirectory(FATFS_EntryList_Struct_t *head)
+{
+    uint8_t no = 1;
+    FATFS_EntryList_Struct_t *count = NULL;
+    
+    printf("---------------------------------------------------------------------------------------\n");
+    printf("%-4s%-15s%-9s%-25s%-17s%-10s\n", "No", "Name", "Size", "Type", "Day Modified", "Time Modified");
+    printf("---------------------------------------------------------------------------------------\n");
+    for(count = head; count != NULL; count = count->next)
+    {
+        if(count->entry.fileName[0] == 0x2E)
+        {
+            printf("%-4d< BACK\n\n", no);
+        }
+        else
+        {
+            printf("%-4d", no);
+            /* Print name */
+                printf("%s - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %d \n", count->entry.fileName,count->entry.attribute, count->entry.reserved[0], count->entry.reserved[1], count->entry.timeStamp, count->entry.dateStamp\
+                , count->entry.accessDate, count->entry.clusterHight, count->entry.editTime, count->entry.editDate, count->entry.editTime, count->entry.clusterLow, count->entry.fileSize);
 
+        }
+        no++;
+    } 
+}
+
+uint32_t Elements(FATFS_EntryList_Struct_t *head)
+{
+    uint32_t elements = 0;
+    FATFS_EntryList_Struct_t *temp = head;
+
+    if(head != NULL)
+    {
+        while (temp != NULL) /* Browse all element */
+        {
+            temp = temp->next;
+            elements++;
+        }
+    }
+    return elements;
+}
+
+uint8_t CheckSelect(FATFS_EntryList_Struct_t *head, uint32_t position)
+{
+    uint8_t check = 0;
+    uint32_t elements = Elements(head);
+
+    if(position < 1 || position > elements) /* Limit input position 1 - numbers element of list */
+    {
+        check++;
+        printf("Error: Input position is not in range 1 - %d!\n", elements);
+    }
+    return check;
+}
 

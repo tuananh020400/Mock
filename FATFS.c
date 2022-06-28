@@ -14,6 +14,8 @@
 
 extern FATFS_BootInfor_Struct_t g_bootSector;
 
+static Status ReadFATValue(uint32_t *startCluster);
+
 /*******************************************************************************
 * Code
 *******************************************************************************/
@@ -154,9 +156,10 @@ static Status FATFS_ReadSubDirectory(FATFS_EntryList_Struct_t **head, uint32_t s
                     index = index + 32;
                     offset = &buffer[index];
                 }
-                startCluster = ReadFATValue(startCluster);
+                status = ReadFATValue(&startCluster);
             }
         }
+        free(buffer);
     }
     
     return status;
@@ -187,116 +190,82 @@ Status ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t **head)
     return status;
 }
 
-void ReadFile(uint32_t startCluster, uint32_t size, uint8_t *bufferPrint)
+Status ReadFile(uint32_t startCluster, uint32_t size, uint8_t *buffer)
 {
-    uint8_t *buffer = NULL;
-    uint32_t indexLine = 0;
-    uint32_t index = 0;
+    uint8_t *bufferCluster = NULL;
+    uint32_t indexCluster = 0;
+    uint32_t indexBuffer = 0;
+    Status status = SUCCESSFULLY;
 
-    buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector * g_bootSector.sectorsOfCluster);
-    while ((startCluster != 4095) && (index < size))
+    bufferCluster = (uint8_t*)malloc(g_bootSector.bytesOfSector * g_bootSector.sectorsOfCluster);
+    if(bufferCluster == NULL)
     {
-        indexLine = 0;
-        HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT + g_bootSector.entrysOfRDET/16 + g_bootSector.sectorsOfCluster * (startCluster - 2), g_bootSector.sectorsOfCluster, buffer);
-        while(indexLine < g_bootSector.bytesOfSector * g_bootSector.sectorsOfCluster && (index < size))
-        {
-            //printf("%c", buffer[indexLine]);
-            bufferPrint[index] = buffer[indexLine];
-            index++;
-            indexLine++;
-            //printf("index: %d - %d\n", index, indexLine);
-        }
-        //printf("%d\n", cluster);
-        startCluster = ReadFATValue(startCluster);
+        status = NOT_ENOUGH_MEMORY;
     }
-    free(buffer);
+    else
+    {
+        while ((startCluster != 4095) && (indexBuffer < size) && (status == SUCCESSFULLY))
+        {
+            indexCluster = 0;
+            if(HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + g_bootSector.sectorsOfFAT * g_bootSector.numOfFAT + \
+            (g_bootSector.entrysOfRDET * 32) / (g_bootSector.bytesOfSector) + g_bootSector.sectorsOfCluster * (startCluster - 2),\
+            g_bootSector.sectorsOfCluster, bufferCluster) != (g_bootSector.sectorsOfCluster * g_bootSector.bytesOfSector))
+            {
+                status = READ_FAILED;
+            }
+            while(indexCluster < g_bootSector.bytesOfSector * g_bootSector.sectorsOfCluster && (indexBuffer < size))
+            {
+                buffer[indexBuffer] = bufferCluster[indexCluster];
+                indexBuffer++;
+                indexCluster++;
+            }
+            status = ReadFATValue(&startCluster);
+        }
+        free(bufferCluster);
+    }
+
+    return status;
 }
 
-uint16_t ReadFATValue(uint16_t startCluster)
+static Status ReadFATValue(uint32_t *startCluster)
 {
     uint16_t sectorOfFatValue = 0;
     uint16_t byteOfFatValue = 0;
     uint32_t FATValue = 0;
     uint8_t *buffer = NULL;
+    Status status = SUCCESSFULLY;
 
-    sectorOfFatValue = (startCluster * g_bootSector.sectorsOfCluster * 1.5) / g_bootSector.bytesOfSector;
-    byteOfFatValue = (int)(startCluster * g_bootSector.sectorsOfCluster * 1.5) % (int)g_bootSector.bytesOfSector;
-    if(byteOfFatValue == g_bootSector.bytesOfSector - 1)
+    sectorOfFatValue = ((*startCluster) * g_bootSector.sectorsOfCluster * 1.5) / g_bootSector.bytesOfSector;
+    byteOfFatValue = (uint32_t)((*startCluster) * g_bootSector.sectorsOfCluster * 1.5) % (uint32_t)g_bootSector.bytesOfSector;
+    /* If position of FAT: Sector1[end] & Sector2[start] -> Cannot read FAT if read 1 sector */
+    buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector * 2);
+    if(buffer == NULL)
     {
-        buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector * 2);
-        HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + sectorOfFatValue, 2, buffer);
+        status = NOT_ENOUGH_MEMORY;
     }
     else
     {
-        buffer = (uint8_t*)malloc(g_bootSector.bytesOfSector);
-        HAL_ReadSector(g_bootSector.sectorsOfBoot + sectorOfFatValue, buffer);
-    }
-    if(startCluster % 2 == 0)
-    {
-        FATValue = (((uint32_t)(buffer[byteOfFatValue + 1] &~ (0xF0))) << 8) | (uint32_t)(buffer[byteOfFatValue]);
-    }
-    else
-    {
-        FATValue = ((uint32_t)(buffer[byteOfFatValue + 1]) <<  4) | (uint32_t)(buffer[byteOfFatValue] >> 4);
-    }
-    free(buffer);
-    
-    return FATValue;
-}
-
-void DisplayDirectory(FATFS_EntryList_Struct_t *head)
-{
-    uint8_t no = 1;
-    FATFS_EntryList_Struct_t *count = NULL;
-    
-    printf("---------------------------------------------------------------------------------------\n");
-    printf("%-4s%-15s%-9s%-25s%-17s%-10s\n", "No", "Name", "Size", "Type", "Day Modified", "Time Modified");
-    printf("---------------------------------------------------------------------------------------\n");
-    for(count = head; count != NULL; count = count->next)
-    {
-        if(count->entry.fileName[0] == 0x2E)
+        if(HAL_ReadMultiSector(g_bootSector.sectorsOfBoot + sectorOfFatValue, 2, buffer) != (g_bootSector.bytesOfSector * 2))
         {
-            printf("%-4d< BACK\n\n", no);
+            status = READ_FAILED;
         }
         else
         {
-            printf("%-4d", no);
-            /* Print name */
-                printf("%s - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %x - %d \n", count->entry.fileName,count->entry.attribute, count->entry.reserved[0], count->entry.reserved[1], count->entry.timeStamp, count->entry.dateStamp\
-                , count->entry.accessDate, count->entry.clusterHight, count->entry.editTime, count->entry.editDate, count->entry.editTime, count->entry.clusterLow, count->entry.fileSize);
-
+            if((*startCluster) % 2 == 0) /* Start cluster is even number */
+            {
+                FATValue = (((uint32_t)(buffer[byteOfFatValue + 1] &~ (0xF0))) << 8) | (uint32_t)(buffer[byteOfFatValue]);
+            }
+            else /* Start cluster is odd number */
+            {
+                FATValue = ((uint32_t)(buffer[byteOfFatValue + 1]) <<  4) | (uint32_t)(buffer[byteOfFatValue] >> 4);
+            }
         }
-        no++;
-    } 
-}
-
-uint32_t Elements(FATFS_EntryList_Struct_t *head)
-{
-    uint32_t elements = 0;
-    FATFS_EntryList_Struct_t *temp = head;
-
-    if(head != NULL)
-    {
-        while (temp != NULL) /* Browse all element */
-        {
-            temp = temp->next;
-            elements++;
-        }
+        free(buffer);
     }
-    return elements;
+    (*startCluster) = FATValue;
+
+    return status;
 }
 
-uint8_t CheckSelect(FATFS_EntryList_Struct_t *head, uint32_t position)
-{
-    uint8_t check = 0;
-    uint32_t elements = Elements(head);
-
-    if(position < 1 || position > elements) /* Limit input position 1 - numbers element of list */
-    {
-        check++;
-        printf("Error: Input position is not in range 1 - %d!\n", elements);
-    }
-    return check;
-}
 
 
