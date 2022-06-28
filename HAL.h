@@ -28,8 +28,7 @@ typedef enum
 {
     READ_FAILED = 0,
     NOT_ENOUGH_MEMORY = 1,
-    READ_FILE_SUCCESSFULLY = 2,
-    ADD_SUCCESSFULLY = 3
+    SUCCESSFULLY = 2,
 } Status;
 
 /*******************************************************************************
@@ -69,3 +68,4 @@ int32_t HAL_ReadMultiSector(uint32_t index, uint32_t num, uint8_t *buff);
 /*******************************************************************************
 * End of file
 *******************************************************************************/
+

@@ -31,7 +31,7 @@ static Status HAL_ReadBoot(FATFS_BootInfor_Struct_t *bootSector)
 {
     uint8_t index = 0;
     uint8_t *buffer = NULL;
-    Status readStatus = READ_FILE_SUCCESSFULLY;
+    Status readStatus = SUCCESSFULLY;
 
     /* Allocation buffer array */
     buffer = (uint8_t*)malloc(512);
@@ -70,7 +70,7 @@ static Status HAL_ReadBoot(FATFS_BootInfor_Struct_t *bootSector)
 
 Status HAL_Init(const char * filePath)
 {
-    Status readStatus = READ_FILE_SUCCESSFULLY;
+    Status readStatus = SUCCESSFULLY;
 
     /* Open stream to file */
     g_file = fopen(filePath, "rb");
@@ -111,3 +111,4 @@ int32_t HAL_ReadMultiSector(uint32_t index, uint32_t num, uint8_t *buff)
 /*******************************************************************************
 * End of file
 *******************************************************************************/
+

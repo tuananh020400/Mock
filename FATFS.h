@@ -35,32 +35,13 @@ typedef struct EntryList
 } FATFS_EntryList_Struct_t;
 
 /*******************************************************************************
-* Prototypes
+* API
 *******************************************************************************/
-
-/**
- * @brief 
- * 
- * @param startSector 
- * @param head 
- * @return node 
- */
-FATFS_EntryList_Struct_t * ReadDirectory(uint32_t startSector, FATFS_EntryList_Struct_t *head);
-
-void FreeLinkedList(FATFS_EntryList_Struct_t **head);
-
 void DisplayDirectory(FATFS_EntryList_Struct_t *head);
-
-uint32_t Elements(FATFS_EntryList_Struct_t *head);
-
-FATFS_EntryList_Struct_t * ChageDirectory(FATFS_EntryList_Struct_t *head, uint32_t cluster);
 
 uint16_t ReadFATValue(uint16_t startCluster);
 
-void ReadFile(FATFS_EntryList_Struct_t *head, uint32_t cluster);
-
-FATFS_EntryList_Struct_t * ReadFileOrChangeDirectory(FATFS_EntryList_Struct_t *head, uint8_t select);
-
-uint8_t CheckSelect(FATFS_EntryList_Struct_t *head, uint32_t position);
+FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *head, uint8_t select);
 
 #endif
+

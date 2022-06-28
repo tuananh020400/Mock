@@ -4,7 +4,7 @@
 
 #include "FATFS.h"
 #include "HAL.h"
-#include "Check.h"
+#include "APP.h"
 
 /*******************************************************************************
 * Variables
@@ -20,8 +20,9 @@ int main(void)
 {
     FATFS_EntryList_Struct_t *head = NULL;
     uint8_t select;
+    FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *head, uint8_t select);
     
-    if(HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock\\floppy.img") == READ_FILE_SUCCESSFULLY)
+    if(HAL_Init("D:\\OneDrive - vnu.edu.vn\\FPT SoftWare\\Basic_C\\Mock\\floppy.img") == SUCCESSFULLY)
     {
         head = ReadDirectory(0, head);
         while(1)
@@ -31,7 +32,7 @@ int main(void)
                 printf("\nEnter your select: ");
                 select = InputInt();
             } while (CheckSelect(head, select) != 0);
-            head = ReadFileOrChangeDirectory(head, select);
+            head = FATFS_ReadFileAndDirectory(head, select);
         }
     }
 
@@ -41,3 +42,4 @@ int main(void)
 /*******************************************************************************
 * End of file
 *******************************************************************************/
+
