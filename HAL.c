@@ -67,7 +67,7 @@ static Status HAL_ReadBoot(FATFS_BootInfor_Struct_t *bootSector)
     return readStatus;
 }
 
-Status HAL_Init(const char * filePath)
+void HAL_Init(const char * filePath)
 {
     Status readStatus = SUCCESSFULLY;
 
@@ -81,7 +81,7 @@ Status HAL_Init(const char * filePath)
     /* Read boot sector */
     readStatus = HAL_ReadBoot(&g_bootSector);
     
-    return readStatus;
+    //return readStatus;
 }
 
 int32_t HAL_ReadSector(uint32_t index, uint8_t *buff)

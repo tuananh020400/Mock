@@ -8,6 +8,40 @@
 * Prototypes
 *******************************************************************************/
 
+/**
+ * @brief Add entry to linked list 
+ * 
+ * @param[inout] head Linked list save entries in directory
+ * @param[in] buffer Buffer entry data 
+ * @return Status Reading Status
+ */
+static Status FATFS_AddEntry(FATFS_EntryList_Struct_t **head, FATFS_Entry_Struct_t *buffer);
+
+/**
+ * @brief Read Root Directory
+ * 
+ * @param[inout] head Linked list save entries in directory
+ * @return Status Reading Status
+ */
+static Status FATFS_ReadRootDirectory(FATFS_EntryList_Struct_t **head);
+
+/**
+ * @brief Read Sub Directory
+ * 
+ * @param[inout] head Linked list save entries in directory
+ * @param startCluster Start cluster of the directory
+ * @return Status Reading Status
+ */
+static Status FATFS_ReadSubDirectory(FATFS_EntryList_Struct_t **head, uint32_t startCluster);
+
+/**
+ * @brief Read next FAT value of next startCluster
+ * 
+ * @param[inout] startCluster Start cluster of directories or files
+ * @return Status Reading Status
+ */
+static Status ReadFATValue(uint32_t *startCluster);
+
 /*******************************************************************************
 * Variables
 *******************************************************************************/
@@ -16,11 +50,12 @@ extern FATFS_BootInfor_Struct_t g_bootSector;
 
 static Status ReadFATValue(uint32_t *startCluster);
 
+
 /*******************************************************************************
 * Code
 *******************************************************************************/
 
-Status FATFS_AddEntry(FATFS_EntryList_Struct_t **head, FATFS_Entry_Struct_t *buffer)
+static Status FATFS_AddEntry(FATFS_EntryList_Struct_t **head, FATFS_Entry_Struct_t *buffer)
 {
     Status status = SUCCESSFULLY;
     FATFS_EntryList_Struct_t *nodeAdd = NULL;

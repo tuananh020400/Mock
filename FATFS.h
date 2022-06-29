@@ -1,8 +1,10 @@
 #ifndef _FATFS_H_
 #define _FATFS_H_
+
 /*******************************************************************************
 * Include
 *******************************************************************************/
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -12,6 +14,7 @@
 /*******************************************************************************
 * Definition
 *******************************************************************************/
+#define STARTCLUSTER(X,Y) (((X) << 16) | (Y)) /* X is clusterHight, Y is clusterLow */
 
 typedef struct{
     uint16_t bytesOfSector;
@@ -51,12 +54,32 @@ typedef enum
     NOT_ENOUGH_MEMORY = 1,
     SUCCESSFULLY = 2,
 } Status;
+
 /*******************************************************************************
 * API
 *******************************************************************************/
-void DisplayDirectory(FATFS_EntryList_Struct_t *head);
 
+/**
+ * @brief Read file and sub directory in a directory
+ * 
+ * @param[in] startCluster Start cluster of directory 
+ * @param[inout] head Linked list save entries in directory
+ * @return Status Reading Status
+ */
 Status ReadDirectory(uint32_t startCluster, FATFS_EntryList_Struct_t **head);
 
-#endif
+/**
+ * @brief Read the content of a file
+ * 
+ * @param[in] startCluster Start cluster of file 
+ * @param[in] size Size of file
+ * @param[out] buffer String to store the data of the file
+ * @return Status Reading Status
+ */
+Status ReadFile(uint32_t startCluster, uint32_t size, uint8_t *buffer);
 
+#endif /* _FATFS_H_ */
+
+/*******************************************************************************
+* End of file
+*******************************************************************************/

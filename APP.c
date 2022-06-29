@@ -1,6 +1,7 @@
 #include "APP.h"
 #include "math.h"
 #include "stdint.h"
+#define STARTCLUSTER(X,Y) (((X) << 16) | (Y))
 
 uint8_t CheckSelect(FATFS_EntryList_Struct_t *head, uint32_t position);
 void PrintFile(uint32_t cluster, uint32_t size);
@@ -69,13 +70,13 @@ FATFS_EntryList_Struct_t * FATFS_ReadFileAndDirectory(FATFS_EntryList_Struct_t *
     if(temp->entry.attribute == 0x10)
     {
         system("cls");
-        ReadDirectory(temp->entry.clusterLow, &head);
+        ReadDirectory(STARTCLUSTER((temp->entry.clusterHight), (temp->entry.clusterLow)), &head);
         DisplayDirectory(head);
     }
     else
     {
         system("cls");
-        PrintFile(temp->entry.clusterLow, temp->entry.fileSize);
+        PrintFile(STARTCLUSTER((temp->entry.clusterHight), (temp->entry.clusterLow)), temp->entry.fileSize);
         printf("\n");
         system("pause");
         system("cls");
